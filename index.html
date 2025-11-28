@@ -1,270 +1,251 @@
 <!DOCTYPE html>
-<html>
- <head> 
-  <title>SS链接</title> 
-  <meta charset="utf-8" /> 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script type="text/javascript" src="https://cdn.staticfile.org/jquery/3.3.1/jquery.js"></script> 
-  <script type="text/javascript" src="https://cdn.staticfile.org/jquery.qrcode/1.0/jquery.qrcode.min.js"></script> 
-  <script src="https://cdn.bootcss.com/Base64/1.0.0/base64.min.js"></script> 
-  <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" /> 
-  <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script> 
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=2.0, user-scalable=no,minimal-ui"
+    />
+    <title>DIY水印相机</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+      body {
+        font-family: "Microsoft YaHei", Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 115vh;
+        margin: 0;
+        background-color: #f0f0f0;
+      }
+      #videoContainer {
+        position: relative;
+        width: 380px;
+        height: 500px;
+        overflow: hidden;
+        background-color: black;
+      }
+      #videoElement,
+      #imageElement {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: auto;
+        transform: translate(-50%, -50%);
+      }
+      #bgImage {
+        position: absolute;
+        bottom: 0;
+        left: 0px;
+        width: 380px;
+        height: auto;
+        z-index: 0;
+      }
+      #timeCanvas {
+        position: absolute;
+        left: 60px;
+        bottom: 68px;
+        width: 150px;
+        height: 40px;
+        z-index: 10;
+        pointer-events: none;
+      }
+      #watermarkTextb,
+      #watermarkTextc,
+      #fw {
+        position: absolute;
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 5;
+      }
+      #watermarkTextb {
+        left: 20px;
+        bottom: 51px;
+        padding-top: 8px;
+        padding-bottom: 1px;
+        letter-spacing: 0.1px;
+      }
+      #watermarkTextc {
+        left: 10px;
+        bottom: 13px;
+        padding-bottom: 19px;
+        padding-left: 10px;
+        letter-spacing: 0px;
+      }
+      #fw {
+        right: 2px;
+        bottom: 2px;
+        font-size: 6px;
+        letter-spacing: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="videoContainer">
+      <video id="videoElement" autoplay playsinline></video>
+      <img id="imageElement" style="display: none" />
+      <img id="bgImage" src="bj1.png" />
+      <canvas id="timeCanvas" width="220" height="49"></canvas>
+      <div id="watermarkTextb">广东省东莞市虎门镇</div>
+      <div id="watermarkTextc">获取中</div>
+      <div id="fw">获取中</div>
+    </div>
 
+    <div>
+      <button id="startCamera">使用相机</button>
+      <input type="file" id="uploadImage" accept="image/*" />
+    </div>
 
-  <script type="text/javascript">
-    
-    ;(function($) {
+    <div>
+      <label for="watermarkInputa">A水印:</label>
+      <input type="text" id="watermarkInputa" placeholder="A水印" />
+      <label for="watermarkInputb">B水印:</label>
+      <input type="text" id="watermarkInputb" placeholder="B水印" />
+      <label for="watermarkInputc">C水印:</label>
+      <input type="text" id="watermarkInputc" placeholder="C水印" />
+      <button id="updateWatermark">更新水印</button>
+      <button id="captureBtn">截图保存</button>
+    </div>
 
-    var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
-        a256 = '',
-        r64 = [256],
-        r256 = [256],
-        i = 0;
+    <p>本项目仅供学习参考，请勿非法使用，否则后果自负！</p>
 
-    var UTF8 = {
+    <script>
+      $(document).ready(function () {
+        const video = document.getElementById("videoElement");
+        const img = document.getElementById("imageElement");
+        const canvas = document.getElementById("timeCanvas");
+        const ctx = canvas.getContext("2d");
 
-        /**
-         * Encode multi-byte Unicode string into utf-8 multiple single-byte characters
-         * (BMP / basic multilingual plane only)
-         *
-         * Chars in range U+0080 - U+07FF are encoded in 2 chars, U+0800 - U+FFFF in 3 chars
-         *
-         * @param {String} strUni Unicode string to be encoded as UTF-8
-         * @returns {String} encoded string
-         */
-        encode: function(strUni) {
-            // use regular expressions & String.replace callback function for better efficiency
-            // than procedural approaches
-            var strUtf = strUni.replace(/[\u0080-\u07ff]/g, // U+0080 - U+07FF => 2 bytes 110yyyyy, 10zzzzzz
-            function(c) {
-                var cc = c.charCodeAt(0);
-                return String.fromCharCode(0xc0 | cc >> 6, 0x80 | cc & 0x3f);
-            })
-            .replace(/[\u0800-\uffff]/g, // U+0800 - U+FFFF => 3 bytes 1110xxxx, 10yyyyyy, 10zzzzzz
-            function(c) {
-                var cc = c.charCodeAt(0);
-                return String.fromCharCode(0xe0 | cc >> 12, 0x80 | cc >> 6 & 0x3F, 0x80 | cc & 0x3f);
-            });
-            return strUtf;
-        },
-
-        /**
-         * Decode utf-8 encoded string back into multi-byte Unicode characters
-         *
-         * @param {String} strUtf UTF-8 string to be decoded back to Unicode
-         * @returns {String} decoded string
-         */
-        decode: function(strUtf) {
-            // note: decode 3-byte chars first as decoded 2-byte strings could appear to be 3-byte char!
-            var strUni = strUtf.replace(/[\u00e0-\u00ef][\u0080-\u00bf][\u0080-\u00bf]/g, // 3-byte chars
-            function(c) { // (note parentheses for precence)
-                var cc = ((c.charCodeAt(0) & 0x0f) << 12) | ((c.charCodeAt(1) & 0x3f) << 6) | (c.charCodeAt(2) & 0x3f);
-                return String.fromCharCode(cc);
-            })
-            .replace(/[\u00c0-\u00df][\u0080-\u00bf]/g, // 2-byte chars
-            function(c) { // (note parentheses for precence)
-                var cc = (c.charCodeAt(0) & 0x1f) << 6 | c.charCodeAt(1) & 0x3f;
-                return String.fromCharCode(cc);
-            });
-            return strUni;
-        }
-    };
-
-    while(i < 256) {
-        var c = String.fromCharCode(i);
-        a256 += c;
-        r256[i] = i;
-        r64[i] = b64.indexOf(c);
-        ++i;
-    }
-
-    function code(s, discard, alpha, beta, w1, w2) {
-        s = String(s);
-        var buffer = 0,
-            i = 0,
-            length = s.length,
-            result = '',
-            bitsInBuffer = 0;
-
-        while(i < length) {
-            var c = s.charCodeAt(i);
-            c = c < 256 ? alpha[c] : -1;
-
-            buffer = (buffer << w1) + c;
-            bitsInBuffer += w1;
-
-            while(bitsInBuffer >= w2) {
-                bitsInBuffer -= w2;
-                var tmp = buffer >> bitsInBuffer;
-                result += beta.charAt(tmp);
-                buffer ^= tmp << bitsInBuffer;
-            }
-            ++i;
-        }
-        if(!discard && bitsInBuffer > 0) result += beta.charAt(buffer << (w2 - bitsInBuffer));
-        return result;
-    }
-
-    var Plugin = $.base64 = function(dir, input, encode) {
-            return input ? Plugin[dir](input, encode) : dir ? null : this;
-        };
-
-    Plugin.btoa = Plugin.encode = function(plain, utf8encode) {
-        plain = Plugin.raw === false || Plugin.utf8encode || utf8encode ? UTF8.encode(plain) : plain;
-        plain = code(plain, false, r256, b64, 8, 6);
-        return plain + '===='.slice((plain.length % 4) || 4);
-    };
-
-    Plugin.atob = Plugin.decode = function(coded, utf8decode) {
-        coded = String(coded).split('=');
-        var i = coded.length;
-        do {--i;
-            coded[i] = code(coded[i], true, r64, a256, 6, 8);
-        } while (i > 0);
-        coded = coded.join('');
-        return Plugin.raw === false || Plugin.utf8decode || utf8decode ? UTF8.decode(coded) : coded;
-    };
-}(jQuery));
-
-  </script>
-
-
-  <script type="text/javascript">
-
-
-  $(document).ready(function(){
-
-    $('.dropdown-toggle').dropdown();
-
-    load_con();
-
-  });
-
-  function load_con(){
-    var ip_list_array = new Array();
-    $.get("https://raw.githubusercontent.com/aishuidedabai/BanananNetConfig/master/NEW_GCM.txt",function(data,status){
-
-          var list = foo(data);
-
-          for (var i = list.length - 1; i >= 0; i--) {
-            var mod = fooForM(list[i]);
-            var map = {};
-            map['ip'] = mod[0];
-            map['port'] = mod[1];
-            map['name'] = mod[2];
-
-        $('#ss-list').append('<li><a href="#">'+ i +'</a></li>');
-
-            ip_list_array.push(map);
+        function generateRandomString(length) {
+          const chars = "ABCDEFGHIJKMNOPQRSTUVWXYZ0123456789";
+          let result = "";
+          for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
           }
+          return "防伪 " + result;
+        }
 
+        function drawTime(text) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.font = "bold 30px Arial";
+          ctx.textBaseline = "top";
+
+          // 白色描边
+          ctx.lineWidth = 2; // 描边宽度
+          ctx.strokeStyle = "white";
+          ctx.strokeText(text, 0, 0);
+
+          // 渐变填充
+          const gradient = ctx.createLinearGradient(0, 0, 0, 40);
+          gradient.addColorStop(0, "#5798ff");
+          gradient.addColorStop(1, "black");
+          ctx.fillStyle = gradient;
+          ctx.fillText(text, 0, 0);
+        }
+
+        function initWatermark() {
+          const now = new Date();
+          const h = ("0" + now.getHours()).slice(-2);
+          const m = ("0" + now.getMinutes()).slice(-2);
+          const timeStr = h + ":" + m;
+          $("#watermarkInputa").val(timeStr);
+          drawTime(timeStr);
+
+          $("#watermarkInputb").val("广东省广州市白云区龙井西路4号");
+          const days = [
+            "星期日",
+            "星期一",
+            "星期二",
+            "星期三",
+            "星期四",
+            "星期五",
+            "星期六",
+          ];
+          const dateStr =
+            now.getFullYear() +
+            "." +
+            ("0" + (now.getMonth() + 1)).slice(-2) +
+            "." +
+            ("0" + now.getDate()).slice(-2) +
+            " " +
+            days[now.getDay()];
+          $("#watermarkInputc").val(dateStr);
+          $("#watermarkTextc").text(dateStr);
+
+          $("#fw").text(generateRandomString(13));
+        }
+
+        initWatermark();
+
+        $("#startCamera").click(function () {
+          img.style.display = "none";
+          video.style.display = "block";
+          navigator.mediaDevices
+            .getUserMedia({ video: { facingMode: "environment" } })
+            .then((stream) => (video.srcObject = stream))
+            .catch((err) => console.log(err));
+        });
+
+        $("#uploadImage").change(function (e) {
+          video.style.display = "none";
+          img.style.display = "block";
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          reader.onload = function (ev) {
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+
+        $("#updateWatermark").click(function () {
+          const a = $("#watermarkInputa").val();
+          const b = $("#watermarkInputb").val();
+          const c = $("#watermarkInputc").val();
+          drawTime(a);
+          $("#watermarkTextb").text(b);
+          $("#watermarkTextc").text(c);
+          $("#fw").text(generateRandomString(13));
+        });
+
+        $("#captureBtn").click(async function () {
+          const div = document.querySelector("#videoContainer");
+          const rect = div.getBoundingClientRect();
+          const snapshot = await html2canvas(div, {
+            scale: 4,
+            useCORS: true,
+            width: rect.width,
+            height: rect.height,
+          });
+
+          // 判断是否为移动端
+          const isMobile =
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+              navigator.userAgent
+            );
+
+          if (isMobile) {
+            // 移动端：新标签打开图片，让用户长按保存
+            const imgData = snapshot.toDataURL("image/png");
+            const newTab = window.open();
+            newTab.document.body.style.margin = "0";
+            newTab.document.body.style.display = "flex";
+            newTab.document.body.style.justifyContent = "center";
+            newTab.document.body.style.alignItems = "center";
+            newTab.document.body.style.height = "100vh";
+            newTab.document.body.innerHTML = `<img src="${imgData}" style="max-width:100%;max-height:100%;">`;
+          } else {
+            // PC端：直接下载
+            const link = document.createElement("a");
+            link.download = "screenshot_" + Date.now() + ".png";
+            link.href = snapshot.toDataURL("image/png");
+            link.click();
+          }
+        });
       });
-
-    $("ul#ss-list").on("click","li",function() {  
-
-      var element,
-        pElements = document.getElementsByTagName('canvas');
-      while (pElements.length>0) {
-          element = pElements[0];
-          element.parentElement.removeChild(element);
-      }
-
-
-      var map = ip_list_array[$(this).text()];
-        var en_string = $.base64.encode('aes-256-gcm:banana@'+map['ip']+':'+map['port']);
-        en_string = en_string.replace('==','');
-        var url = 'ss://'+en_string+'?remark='+map['name'];
-
-
-
-      url = encodeURI(url);
-      jQuery('#qrcode').qrcode({width: 200,height: 200,correctLevel:0,render: "canvas",text: url});  
-      console.log(url);
-
-      $("#host_name").text('ss://链接 ' + map['name']);
-
-      $("#host_name").attr("href",url); 
-
-      $("#server_name").text(map['name']);
-      $("#ip").text(map['ip']);
-      $("#port").text(map['port']);
-      $("#cipher").text('aes-256-gcm');
-      $("#password").text('banana');
-
-    });
-  }
-
-
-  function foo(str){
-    var temp = str.split(/[\n,]/g);
-      for(var i =0;i<temp.length;i++){
-      if(temp[i] == ""){
-        temp.splice(i, 1);
-        i--;
-      }
-    }
-    return temp;
-  }
-  
-  function fooForM(str){
-    var temp = str.split(":");
-      for(var i =0;i<temp.length;i++){
-      if(temp[i] == ""){
-        temp.splice(i, 1);
-        i--;
-      }
-    }
-    return temp;
-  }
-
-</script>
- </head>  
- <body> 
-  <nav class="navbar navbar-default" role="navigation"> 
-   <div class="container-fluid"> 
-    <div class="navbar-header"> 
-     <a class="navbar-brand" href="#">获取Shadowsocks链接</a> 
-    </div> 
-    <div> 
-     <ul class="nav navbar-nav"> 
-      <li class="dropdown"> <a href="#" class="dropdown-toggle" data-toggle="dropdown"> SS链接 <b class="caret"></b> </a> 
-       <ul class="dropdown-menu" id="ss-list"> 
-       </ul> </li> 
-     </ul> 
-    </div> 
-   </div> 
-  </nav> 
-
-  <table class="table">
-     <thead>
-       <tr>
-         <th>name</th>
-         <th>ip</th>
-         <th>port</th>
-         <th>cipher</th>
-         <th>password</th>
-       </tr>
-     </thead>
-     <tbody>
-       <tr>
-         <td id="server_name"></td>
-         <td id="ip"></td>
-         <td id="port"></td>
-         <td id="cipher"></td>
-         <td id="password"></td>
-       </tr>
-     </tbody>
-   </table>
-
-
-
-
-  <a id="host_name"style="color-interpolation-filters: "></a> 
-
-
-
-  <div id="qrcode"> 
-  </div>  
-  <div id="code"></div>  
- </body>
+    </script>
+  </body>
 </html>
