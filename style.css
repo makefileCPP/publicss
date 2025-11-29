@@ -1,0 +1,80 @@
+body {
+  font-family: "Microsoft YaHei", Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 115vh;
+  margin: 0;
+  background-color: #f0f0f0;
+}
+
+#videoContainer {
+  position: relative;
+  width: 380px;
+  height: 500px;
+  overflow: hidden;
+  background-color: black;
+}
+
+#videoElement,
+#imageElement {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: auto;
+  transform: translate(-50%, -50%);
+}
+
+#bgImage {
+  position: absolute;
+  bottom: 0;
+  left: 0px;
+  width: 380px;
+  height: auto;
+  z-index: 0;
+}
+
+#timeCanvas {
+  position: absolute;
+  left: 60px;
+  bottom: 68px;
+  width: 150px;
+  height: 40px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+#watermarkTextb,
+#watermarkTextc,
+#fw {
+  position: absolute;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 5;
+}
+
+#watermarkTextb {
+  left: 20px;
+  bottom: 51px;
+  padding-top: 8px;
+  padding-bottom: 1px;
+  letter-spacing: 0.1px;
+}
+
+#watermarkTextc {
+  left: 10px;
+  bottom: 13px;
+  padding-bottom: 19px;
+  padding-left: 10px;
+  letter-spacing: 0px;
+}
+
+#fw {
+  right: 2px;
+  bottom: 2px;
+  font-size: 6px;
+  letter-spacing: 0;
+}
