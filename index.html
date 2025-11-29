@@ -7,88 +7,21 @@
       content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=2.0, user-scalable=no,minimal-ui"
     />
     <title>DIY水印相机</title>
+    
+    <link rel="stylesheet" href="https://ghfast.top/https://raw.githubusercontent.com/makefileCPP/publicss/refs/heads/master/style.css" />
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <style>
-      body {
-        font-family: "Microsoft YaHei", Arial, sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 115vh;
-        margin: 0;
-        background-color: #f0f0f0;
-      }
-      #videoContainer {
-        position: relative;
-        width: 380px;
-        height: 500px;
-        overflow: hidden;
-        background-color: black;
-      }
-      #videoElement,
-      #imageElement {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 100%;
-        height: auto;
-        transform: translate(-50%, -50%);
-      }
-      #bgImage {
-        position: absolute;
-        bottom: 0;
-        left: 0px;
-        width: 380px;
-        height: auto;
-        z-index: 0;
-      }
-      #timeCanvas {
-        position: absolute;
-        left: 60px;
-        bottom: 68px;
-        width: 150px;
-        height: 40px;
-        z-index: 10;
-        pointer-events: none;
-      }
-      #watermarkTextb,
-      #watermarkTextc,
-      #fw {
-        position: absolute;
-        color: white;
-        font-size: 14px;
-        font-weight: bold;
-        z-index: 5;
-      }
-      #watermarkTextb {
-        left: 20px;
-        bottom: 51px;
-        padding-top: 8px;
-        padding-bottom: 1px;
-        letter-spacing: 0.1px;
-      }
-      #watermarkTextc {
-        left: 10px;
-        bottom: 13px;
-        padding-bottom: 19px;
-        padding-left: 10px;
-        letter-spacing: 0px;
-      }
-      #fw {
-        right: 2px;
-        bottom: 2px;
-        font-size: 6px;
-        letter-spacing: 0;
-      }
-    </style>
   </head>
+
   <body>
     <div id="videoContainer">
       <video id="videoElement" autoplay playsinline></video>
       <img id="imageElement" style="display: none" />
-      <img id="bgImage" src="https://ghfast.top/https://raw.githubusercontent.com/makefileCPP/publicss/refs/heads/master/bj1.png" />
+      <img
+        id="bgImage"
+        src="https://ghfast.top/https://raw.githubusercontent.com/makefileCPP/publicss/refs/heads/master/bj1.png"
+      />
       <canvas id="timeCanvas" width="220" height="49"></canvas>
       <div id="watermarkTextb">广东省东莞市虎门镇</div>
       <div id="watermarkTextc">获取中</div>
@@ -103,149 +36,20 @@
     <div>
       <label for="watermarkInputa">A水印:</label>
       <input type="text" id="watermarkInputa" placeholder="A水印" />
+
       <label for="watermarkInputb">B水印:</label>
       <input type="text" id="watermarkInputb" placeholder="B水印" />
+
       <label for="watermarkInputc">C水印:</label>
       <input type="text" id="watermarkInputc" placeholder="C水印" />
+
       <button id="updateWatermark">更新水印</button>
       <button id="captureBtn">截图保存</button>
     </div>
 
     <p>本项目仅供学习参考，请勿非法使用，否则后果自负！</p>
 
-    <script>
-      $(document).ready(function () {
-        const video = document.getElementById("videoElement");
-        const img = document.getElementById("imageElement");
-        const canvas = document.getElementById("timeCanvas");
-        const ctx = canvas.getContext("2d");
-
-        function generateRandomString(length) {
-          const chars = "ABCDEFGHIJKMNOPQRSTUVWXYZ0123456789";
-          let result = "";
-          for (let i = 0; i < length; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-          }
-          return "防伪 " + result;
-        }
-
-        function drawTime(text) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.font = "bold 30px Arial";
-          ctx.textBaseline = "top";
-
-          // 白色描边
-          ctx.lineWidth = 2; // 描边宽度
-          ctx.strokeStyle = "white";
-          ctx.strokeText(text, 0, 0);
-
-          // 渐变填充
-          const gradient = ctx.createLinearGradient(0, 0, 0, 40);
-          gradient.addColorStop(0, "#5798ff");
-          gradient.addColorStop(1, "black");
-          ctx.fillStyle = gradient;
-          ctx.fillText(text, 0, 0);
-        }
-
-        function initWatermark() {
-          const now = new Date();
-          const h = ("0" + now.getHours()).slice(-2);
-          const m = ("0" + now.getMinutes()).slice(-2);
-          const timeStr = h + ":" + m;
-          $("#watermarkInputa").val(timeStr);
-          drawTime(timeStr);
-
-          $("#watermarkInputb").val("广东省广州市白云区龙井西路4号");
-          const days = [
-            "星期日",
-            "星期一",
-            "星期二",
-            "星期三",
-            "星期四",
-            "星期五",
-            "星期六",
-          ];
-          const dateStr =
-            now.getFullYear() +
-            "." +
-            ("0" + (now.getMonth() + 1)).slice(-2) +
-            "." +
-            ("0" + now.getDate()).slice(-2) +
-            " " +
-            days[now.getDay()];
-          $("#watermarkInputc").val(dateStr);
-          $("#watermarkTextc").text(dateStr);
-
-          $("#fw").text(generateRandomString(13));
-        }
-
-        initWatermark();
-
-        $("#startCamera").click(function () {
-          img.style.display = "none";
-          video.style.display = "block";
-          navigator.mediaDevices
-            .getUserMedia({ video: { facingMode: "environment" } })
-            .then((stream) => (video.srcObject = stream))
-            .catch((err) => console.log(err));
-        });
-
-        $("#uploadImage").change(function (e) {
-          video.style.display = "none";
-          img.style.display = "block";
-          const file = e.target.files[0];
-          const reader = new FileReader();
-          reader.onload = function (ev) {
-            img.src = ev.target.result;
-          };
-          reader.readAsDataURL(file);
-        });
-
-        $("#updateWatermark").click(function () {
-          const a = $("#watermarkInputa").val();
-          const b = $("#watermarkInputb").val();
-          const c = $("#watermarkInputc").val();
-          drawTime(a);
-          $("#watermarkTextb").text(b);
-          $("#watermarkTextc").text(c);
-          $("#fw").text(generateRandomString(13));
-        });
-
-        $("#captureBtn").click(async function () {
-          const div = document.querySelector("#videoContainer");
-          const rect = div.getBoundingClientRect();
-          const snapshot = await html2canvas(div, {
-            scale: 2,
-            useCORS: true,
-            width: rect.width,
-            height: rect.height,
-          });
-
-          // 判断是否为移动端
-          const isMobile =
-            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-              navigator.userAgent
-            );
-
-          if (isMobile) {
-            // 移动端：新标签打开图片，让用户长按保存
-            const imgData = snapshot.toDataURL("image/png");
-            const newTab = window.open();
-            newTab.document.body.style.margin = "0";
-            newTab.document.body.style.display = "flex";
-            newTab.document.body.style.justifyContent = "center";
-            newTab.document.body.style.alignItems = "center";
-            newTab.document.body.style.height = "100vh";
-            newTab.document.body.innerHTML = `<img src="${imgData}" style="max-width:100%;max-height:100%;">`;
-          } else {
-            // PC端：直接下载
-            const link = document.createElement("a");
-            link.download = "screenshot_" + Date.now() + ".png";
-            link.href = snapshot.toDataURL("image/png");
-            link.click();
-          }
-        });
-      });
-    </script>
+    <!-- 外部 JS -->
+    <script src="https://ghfast.top/https://raw.githubusercontent.com/makefileCPP/publicss/refs/heads/master/main.js"></script>
   </body>
 </html>
