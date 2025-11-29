@@ -34,13 +34,10 @@ $(document).ready(function () {
    * --------------------------*/
   function loadSavedWatermark() {
     const savedB = localStorage.getItem("wm_b");
-    const savedC = localStorage.getItem("wm_c");
 
     if (savedB) $("#watermarkInputb").val(savedB);
-    if (savedC) $("#watermarkInputc").val(savedC);
 
     if (savedB) $("#watermarkTextb").text(savedB);
-    if (savedC) $("#watermarkTextc").text(savedC);
   }
 
   /** ---------------------------
@@ -56,11 +53,22 @@ $(document).ready(function () {
 
     // 默认值
     const defaultB = "广东省广州市白云区龙井西路4号";
-    const days = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+    const days = [
+      "星期日",
+      "星期一",
+      "星期二",
+      "星期三",
+      "星期四",
+      "星期五",
+      "星期六",
+    ];
     const dateStr =
-      now.getFullYear() + "." +
-      ("0" + (now.getMonth() + 1)).slice(-2) + "." +
-      ("0" + now.getDate()).slice(-2) + " " +
+      now.getFullYear() +
+      "." +
+      ("0" + (now.getMonth() + 1)).slice(-2) +
+      "." +
+      ("0" + now.getDate()).slice(-2) +
+      " " +
       days[now.getDay()];
 
     // 默认填入输入框
@@ -120,39 +128,36 @@ $(document).ready(function () {
 
     // 保存到 localStorage
     localStorage.setItem("wm_b", b);
-    localStorage.setItem("wm_c", c);
   });
 
   /** ---------------------------
    *  截图保存
    * --------------------------*/
   $("#captureBtn").click(async function () {
+    showToast("正在生成图片...");
+
     const div = document.querySelector("#videoContainer");
-    const rect = div.getBoundingClientRect();
+    const snapshot = await html2canvas(div, { scale: 2, useCORS: true });
 
-    const snapshot = await html2canvas(div, {
-      scale: 2,
-      useCORS: true,
-      width: rect.width,
-      height: rect.height,
-    });
-
-    const isMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
       const imgData = snapshot.toDataURL("image/png");
       const newTab = window.open();
-      newTab.document.body.style.margin = "0";
-      newTab.document.body.innerHTML =
-        `<img src="${imgData}" style="max-width:100%;max-height:100%">`;
+      newTab.document.body.innerHTML = `<img src="${imgData}" style="max-width:100%;">`;
+      showToast("长按图片保存");
     } else {
       const link = document.createElement("a");
       link.download = "screenshot_" + Date.now() + ".png";
       link.href = snapshot.toDataURL("image/png");
       link.click();
+      showToast("保存成功！");
     }
   });
+  
+  function showToast(text) {
+    const toast = $("#toast");
+    toast.text(text).fadeIn(200);
+    setTimeout(() => toast.fadeOut(300), 2000);
+  }
 });
